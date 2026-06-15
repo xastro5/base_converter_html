@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base Converter</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f5f5f7;
+      --card-bg: #ffffff;
+      --text: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent: #007aff;
+      --accent-hover: #0071e3;
+      --border: #d2d2d7;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-hover: 0 8px 32px rgba(0,0,0,0.12);
+      --radius: 12px;
+      --radius-lg: 16px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .container { width: 100%; max-width: 860px; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
+    .header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+    .config-bar {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .config-item { display: flex; align-items: center; gap: 8px; }
+    .config-item label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .config-item select,
+    .config-item input {
+      font-size: 13px;
+      font-family: inherit;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .config-item select:focus,
+    .config-item input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+    }
+    .config-item input:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error-msg { font-size: 12px; color: #ff3b30; margin-left: auto; }
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .main-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.3s;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); }
+    .card-header {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+    .field input,
+    .field textarea {
+      width: 100%;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+      background: #fff;
+    }
+    .field input::placeholder,
+    .field textarea::placeholder { color: #c7c7cc; }
+    .field input:hover,
+    .field textarea:hover { border-color: #b0b0b8; }
+    /* Adaptive height textarea — browser wraps at spaces via pre-wrap, no forced newlines */
+    .field textarea {
+      resize: vertical;
+      min-height: 42px;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .custom-base-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .custom-base-row .field { margin-bottom: 0; }
+    .custom-base-row .field label { font-size: 11px; margin-bottom: 4px; }
+    .custom-base-row input[type="number"] { width: 70px; font-family: inherit; text-align: center; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); color: #fff; box-shadow: 0 2px 8px rgba(0,122,255,0.3); }
+    .btn-primary:hover { background: linear-gradient(135deg, #0071e3 0%, #004a99 100%); box-shadow: 0 4px 16px rgba(0,122,255,0.4); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-danger { background: linear-gradient(135deg, #ff3b30 0%, #c92a20 100%); color: #fff; box-shadow: 0 2px 8px rgba(255,59,48,0.3); }
+    .btn-danger:hover { background: linear-gradient(135deg, #e6352b 0%, #b0251c 100%); box-shadow: 0 4px 16px rgba(255,59,48,0.4); }
+    .btn-danger:active { transform: scale(0.97); }
+    .hint-text { font-size: 11px; color: var(--text-secondary); margin-top: 16px; text-align: center; font-style: italic; }
+    .btn-center { display: flex; justify-content: center; margin-top: 24px; gap: 20px; }
+    .info-panel { margin-top: 16px; }
+    .info-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.4s ease-out 0.1s both;
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .info-item {
+      background: linear-gradient(135deg, #f5f5f7 0%, #efeff1 100%);
+      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+    .info-item .label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .info-item .value {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    ::selection { background: rgba(0,122,255,0.2); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Language toggle buttons */
+    .lang-toggle { display: flex; gap: 4px; }
+    .lang-toggle .lang-btn {
+      font-size: 12px;
+      font-family: inherit;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-toggle .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .lang-toggle .lang-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 data-i18n="title">Base Converter</h1>
+      <p data-i18n="subtitle">Convert between binary, octal, decimal, hex, and custom bases</p>
+    </div>
+
+    <div class="config-bar">
+      <div class="config-item">
+        <label data-i18n="bitWidth">Bit Width:</label>
+        <select id="bitWidth">
+          <option value="4">4</option>
+          <option value="8" selected>8</option>
+          <option value="16">16</option>
+          <option value="32">32</option>
+          <option value="64">64</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="config-item">
+        <input type="number" id="customBitWidth" value="8" min="1" max="128" disabled style="width:64px">
+      </div>
+      <div class="config-item lang-toggle" style="min-width: 130px;">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh">中文</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-header" data-i18n="baseConversion">Base Conversion</div>
+        <div class="field">
+          <label data-i18n="binary">Binary</label>
+          <textarea id="binInput" placeholder="e.g. 1010 0101"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="octal">Octal</label>
+          <input type="text" id="octInput" placeholder="e.g. 225">
+        </div>
+        <div class="field">
+          <label data-i18n="decimal">Decimal</label>
+          <input type="text" id="decInput" placeholder="e.g. -59">
+        </div>
+        <div class="field">
+          <label data-i18n="hexadecimal">Hexadecimal</label>
+          <input type="text" id="hexInput" placeholder="e.g. C5">
+        </div>
+        <div class="custom-base-row">
+          <div class="field">
+            <label data-i18n="customBase">Custom Base</label>
+            <input type="number" id="customBase" value="10" min="2" max="36">
+          </div>
+          <div class="field">
+            <label data-i18n="value">Value</label>
+            <input type="text" id="customInput" placeholder="e.g. 123">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" data-i18n="complementCodes">Complement Codes</div>
+        <div class="field">
+          <label data-i18n="signMag">Sign Magnitude</label>
+          <textarea id="signMagInput" placeholder="e.g. 1010 0101"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="onesComp">Ones Complement</label>
+          <textarea id="onesInput" placeholder="e.g. 1100 1010"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="twosComp">Twos Complement</label>
+          <textarea id="twosInput" placeholder="e.g. 1100 1011"></textarea>
+        </div>
+        <p class="hint-text" data-i18n="hint">Sign bit (MSB) indicates sign; remaining bits hold magnitude</p>
+        <div class="btn-center">
+          <button class="btn btn-danger" id="resetBtn" data-i18n="reset">Reset</button>
+          <button class="btn btn-primary" id="calcBtn" data-i18n="calcAll">Calculate All</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-card">
+        <div class="card-header" data-i18n="information">Information</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="label" data-i18n="infoBw">Bit Width</div>
+            <div class="value" id="infoBw">8</div>
+          </div>
+          <div class="info-item">
+            <div class="label" data-i18n="infoSigned">Value (Signed)</div>
+            <div class="value" id="infoVal">0</div>
+          </div>
+          <div class="info-item">
+            <div class="label" data-i18n="infoUnsigned">Value (Unsigned)</div>
+            <div class="value" id="infoUnsigned">0</div>
+          </div>
+          <div class="info-item">
+            <div class="label" data-i18n="infoRange">Range</div>
+            <div class="value" id="infoRange">[-128, 127]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer style="text-align: center; padding: 16px 24px 24px; font-size: 12px; color: #86868b; width: 100%;">
+      <p>Author: astrovyz &nbsp;·&nbsp; Copyright © 2025-2026 chatvyz. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+      // === i18n ===
+      var I18N = {
+        en: {
+          title: 'Base Converter',
+          subtitle: 'Convert between binary, octal, decimal, hex, and custom bases',
+          bitWidth: 'Bit Width:',
+          baseConversion: 'Base Conversion',
+          binary: 'Binary',
+          octal: 'Octal',
+          decimal: 'Decimal',
+          hexadecimal: 'Hexadecimal',
+          customBase: 'Custom Base',
+          value: 'Value',
+          complementCodes: 'Complement Codes',
+          signMag: 'Sign Magnitude',
+          onesComp: 'Ones Complement',
+          twosComp: 'Twos Complement',
+          hint: 'Sign bit (MSB) indicates sign; remaining bits hold magnitude',
+          reset: 'Reset',
+          calcAll: 'Calculate All',
+          information: 'Information',
+          infoBw: 'Bit Width',
+          infoSigned: 'Value (Signed)',
+          infoUnsigned: 'Value (Unsigned)',
+          infoRange: 'Range',
+          errBin: 'Invalid binary digit (use 0 or 1)',
+          errOct: 'Invalid octal digit (use 0-7)',
+          errDec: 'Invalid decimal number',
+          errHex: 'Invalid hex digit (use 0-9, A-F)',
+          errCust: function(cb) { return 'Invalid digit for base ' + cb + ' (use 0-' + DIGITS.charAt(cb - 1) + ')'; },
+          errBits: function(w) { return 'Must be exactly ' + w + ' bits'; },
+          errClamped: function(v, min, max) { return 'Clamped to ' + v + ' (range: [' + min + ', ' + max + '])'; },
+          errBw: 'Bit width must be > 0'
+        },
+        zh: {
+          title: '进制转换器',
+          subtitle: '在二进制、八进制、十进制、十六进制和自定义进制之间转换',
+          bitWidth: '位宽：',
+          baseConversion: '进制转换',
+          binary: '二进制',
+          octal: '八进制',
+          decimal: '十进制',
+          hexadecimal: '十六进制',
+          customBase: '自定义进制',
+          value: '数值',
+          complementCodes: '补码',
+          signMag: '原码',
+          onesComp: '反码',
+          twosComp: '补码',
+          hint: '符号位（MSB）表示正负；其余位表示数值',
+          reset: '重置',
+          calcAll: '全部计算',
+          information: '信息',
+          infoBw: '位宽',
+          infoSigned: '数值（有符号）',
+          infoUnsigned: '数值（无符号）',
+          infoRange: '范围',
+          errBin: '无效的二进制数字（仅使用 0 或 1）',
+          errOct: '无效的八进制数字（仅使用 0-7）',
+          errDec: '无效的十进制数字',
+          errHex: '无效的十六进制数字（仅使用 0-9, A-F）',
+          errCust: function(cb) { return '无效的数字，请使用 0-' + DIGITS.charAt(cb - 1) + '（进制 ' + cb + '）'; },
+          errBits: function(w) { return '必须恰好为 ' + w + ' 位'; },
+          errClamped: function(v, min, max) { return '已限制到 ' + v + '（范围：[' + min + ', ' + max + ']）'; },
+          errBw: '位宽必须 > 0'
+        },
+        fr: {
+          title: 'Convertisseur de Base',
+          subtitle: 'Convertir entre binaire, octal, décimal, hexadécimal et bases personnalisées',
+          bitWidth: 'Largeur (bits) :',
+          baseConversion: 'Conversion de Base',
+          binary: 'Binaire',
+          octal: 'Octal',
+          decimal: 'Décimal',
+          hexadecimal: 'Hexadécimal',
+          customBase: 'Base Perso.',
+          value: 'Valeur',
+          complementCodes: 'Codes Complémentaires',
+          signMag: 'Signe & Magnitude',
+          onesComp: 'Complément à 1',
+          twosComp: 'Complément à 2',
+          hint: 'Le bit de signe (MSB) indique le signe ; les bits restants contiennent la magnitude',
+          reset: 'Réinitialiser',
+          calcAll: 'Tout Calculer',
+          information: 'Informations',
+          infoBw: 'Largeur',
+          infoSigned: 'Valeur (Signée)',
+          infoUnsigned: 'Valeur (Non signée)',
+          infoRange: 'Plage',
+          errBin: 'Chiffre binaire invalide (utilisez 0 ou 1)',
+          errOct: 'Chiffre octal invalide (utilisez 0-7)',
+          errDec: 'Nombre décimal invalide',
+          errHex: 'Chiffre hexadécimal invalide (utilisez 0-9, A-F)',
+          errCust: function(cb) { return 'Chiffre invalide pour la base ' + cb + ' (utilisez 0-' + DIGITS.charAt(cb - 1) + ')'; },
+          errBits: function(w) { return 'Doit être exactement ' + w + ' bits'; },
+          errClamped: function(v, min, max) { return 'Limité à ' + v + ' (plage : [' + min + ', ' + max + '])'; },
+          errBw: 'La largeur doit être > 0'
+        }
+      };
+
+      var currentLang = 'en';
+
+      function applyI18n() {
+        var t = I18N[currentLang];
+        var elems = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < elems.length; i++) {
+          var key = elems[i].getAttribute('data-i18n');
+          if (t[key]) elems[i].textContent = t[key];
+        }
+        // Update active lang button
+        var btns = document.querySelectorAll('.lang-btn');
+        for (var j = 0; j < btns.length; j++) {
+          btns[j].classList.toggle('active', btns[j].getAttribute('data-lang') === currentLang);
+        }
+      }
+
+      function t(key) {
+        return I18N[currentLang][key];
+      }
+
+      // === DOM refs ===
+      var binInput = document.getElementById('binInput');
+      var octInput = document.getElementById('octInput');
+      var decInput = document.getElementById('decInput');
+      var hexInput = document.getElementById('hexInput');
+      var customBaseEl = document.getElementById('customBase');
+      var customInput = document.getElementById('customInput');
+      var signMagInput = document.getElementById('signMagInput');
+      var onesInput = document.getElementById('onesInput');
+      var twosInput = document.getElementById('twosInput');
+      var bitWidthSelect = document.getElementById('bitWidth');
+      var customBitWidthInput = document.getElementById('customBitWidth');
+      var calcBtn = document.getElementById('calcBtn');
+      var errorMsg = document.getElementById('errorMsg');
+
+      var currentValue = 0;
+      var isUpdating = false;
+      var isInitializing = true;
+      var lastEditedField = null;
+
+      function getBitWidth() {
+        var sel = bitWidthSelect.value;
+        if (sel === 'custom') {
+          var v = parseInt(customBitWidthInput.value, 10);
+          return (v > 0) ? v : 8;
+        }
+        return parseInt(sel, 10);
+      }
+
+      function getCustomBase() {
+        var b = parseInt(customBaseEl.value, 10);
+        return (b >= 2 && b <= 36) ? b : null;
+      }
+
+      function formatWithSpaces(s, group) {
+        group = group || 4;
+        if (!s || s.length <= group) return s || '';
+        // Group from RIGHT by 'group', no padding — 残段出现在左侧
+        var rem = s.length % group;
+        var result = '';
+        if (rem > 0) {
+          // Leading remainder (残段) on the left, then remaining chars grouped by 'group'
+          var rest = s.substring(rem);
+          for (var i = 0; i < rest.length; i += group) {
+            if (result) result += ' ';
+            result += rest.substring(i, i + group);
+          }
+          result = s.substring(0, rem) + (result ? ' ' + result : '');
+        } else {
+          // Exact multiple of group: simple right-to-left grouping
+          for (var i = s.length - group; i >= 0; i -= group) {
+            if (result) result = ' ' + result;
+            result = s.substring(i, i + group) + result;
+          }
+        }
+        return result;
+      }
+
+      // Utility for zero-padding a string to a given width
+      function zeroPad(str, width) {
+        var p = '';
+        for (var i = str.length; i < width; i++) p += '0';
+        return p + str;
+      }
+
+      // V4: Check if all input fields are empty (initial state)
+      function areAllFieldsEmpty() {
+        var fields = [binInput, octInput, decInput, hexInput, customInput,
+          signMagInput, onesInput, twosInput];
+        for (var i = 0; i < fields.length; i++) {
+          if (fields[i].value.trim() !== '') return false;
+        }
+        return true;
+      }
+
+      function refreshAllDisplays() {
+        if (isUpdating) return;
+        isUpdating = true;
+        try {
+          // Clear error message on successful display refresh
+          errorMsg.textContent = '';
+          var val = currentValue;
+          var width = getBitWidth();
+          // Use Math.pow for width >= 31 to avoid JS bitwise overflow (1 << 31 is signed, 1 << 32 wraps)
+          var mask = width >= 31 ? Math.pow(2, width) - 1 : (1 << width) - 1;
+
+          // Only populate inputs when not initializing (avoids showing zeros on load)
+          if (!isInitializing) {
+            // Binary: V3 — negative shows -(abs(val).toString(2)), positive shows val.toString(2)
+            if (val < 0) {
+              binInput.value = '-' + formatWithSpaces(Math.abs(val).toString(2));
+            } else {
+              binInput.value = formatWithSpaces(val.toString(2));
+            }
+
+            // Octal, Decimal, Hex — V3: negative shows -(abs(val).toString(base))
+            if (val < 0) {
+              octInput.value = '-' + Math.abs(val).toString(8);
+              hexInput.value = '-' + Math.abs(val).toString(16).toUpperCase();
+            } else {
+              octInput.value = val.toString(8);
+              hexInput.value = val.toString(16).toUpperCase();
+            }
+            decInput.value = val.toString();
+
+            // Custom base — no grouping (V3)
+            var cb = getCustomBase();
+            if (cb) {
+              var t = Math.abs(val);
+              var res = '';
+              while (t > 0) {
+                res = DIGITS.charAt(t % cb) + res;
+                t = Math.floor(t / cb);
+              }
+              var customResult = (val < 0 ? '-' : '') + (res || '0');
+              customInput.value = customResult;
+            }
+
+            // Twos complement: stored representation (masked)
+            var twosVal = val & mask;
+            var twosStr = zeroPad(twosVal.toString(2), width);
+            twosInput.value = formatWithSpaces(twosStr);
+
+            // Sign magnitude and ones complement
+            if (val >= 0) {
+              var magBits = val === 0 ? '0' : val.toString(2);
+              var sm = '0' + zeroPad(magBits, width - 1);
+              signMagInput.value = formatWithSpaces(sm);
+              onesInput.value = formatWithSpaces(sm);
+            } else {
+              var mag = Math.abs(val);
+              var magBits = mag.toString(2);
+              // Overflow: if magnitude needs MORE than width-1 bits, sign mag cannot represent it
+              if (magBits.length > width - 1) {
+                // Show overflow indicator: width bits of '?'
+                var overflow = '';
+                for (var oi = 0; oi < width; oi++) overflow += '?';
+                signMagInput.value = formatWithSpaces(overflow);
+                onesInput.value = formatWithSpaces(overflow);
+              } else {
+                var magBitsPadded = zeroPad(magBits, width - 1);
+                var sm = '1' + magBitsPadded;
+                signMagInput.value = formatWithSpaces(sm);
+                // Ones complement = sign bit '1' + bitwise NOT of magnitude bits
+                var onesStr = '1';
+                for (var i = 0; i < magBitsPadded.length; i++) {
+                  onesStr += magBitsPadded.charAt(i) === '0' ? '1' : '0';
+                }
+                onesInput.value = formatWithSpaces(onesStr);
+              }
+            }
+          }
+
+          // Info panel - always update
+          var unsigned = val & mask;
+          var rangeMin = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
+          var rangeMax = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
+          document.getElementById('infoBw').textContent = width;
+          document.getElementById('infoVal').textContent = val;
+          document.getElementById('infoUnsigned').textContent = unsigned;
+          document.getElementById('infoRange').textContent = '[' + rangeMin + ', ' + rangeMax + ']';
+        } finally {
+          isUpdating = false;
+        }
+      }
+
+      function onInput(key) {
+        if (isUpdating) return;
+        lastEditedField = key;
+
+        var raw;
+        if (key === 'bin') {
+          raw = binInput.value.replace(/[\s\n]/g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          if (!/^-?[01]+$/.test(raw)) {
+            errorMsg.textContent = t('errBin');
+            return;
+          }
+          var neg = raw.charAt(0) === '-';
+          if (neg) raw = raw.substring(1);
+          var v = parseInt(raw, 2);
+          currentValue = neg ? -v : v;
+        } else if (key === 'oct') {
+          raw = octInput.value.replace(/ /g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          if (!/^-?[0-7]+$/.test(raw)) {
+            errorMsg.textContent = t('errOct');
+            return;
+          }
+          var neg = raw.charAt(0) === '-';
+          if (neg) raw = raw.substring(1);
+          var v = parseInt(raw, 8);
+          currentValue = neg ? -v : v;
+        } else if (key === 'dec') {
+          raw = decInput.value.replace(/ /g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          if (!/^-?\d+$/.test(raw)) {
+            errorMsg.textContent = t('errDec');
+            return;
+          }
+          currentValue = parseInt(raw, 10);
+        } else if (key === 'hex') {
+          raw = hexInput.value.replace(/ /g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          // V5.1: Require at least one hex digit (prevents lone '-' from silently clamping to minVal)
+          if (!/^-?[0-9a-fA-F]+$/.test(raw) || raw === '-') {
+            errorMsg.textContent = t('errHex');
+            return;
+          }
+          var neg = raw.charAt(0) === '-';
+          if (neg) raw = raw.substring(1);
+          var v = parseInt(raw, 16);
+          currentValue = neg ? -v : v;
+        } else if (key === 'custom') {
+          raw = customInput.value.replace(/ /g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          var cb = getCustomBase();
+          if (!cb) return;
+          var neg = raw.charAt(0) === '-';
+          if (neg) raw = raw.substring(1);
+          var valid = DIGITS.substring(0, cb);
+          for (var i = 0; i < raw.length; i++) {
+            if (valid.indexOf(raw.charAt(i).toLowerCase()) === -1) {
+              errorMsg.textContent = t('errCust')(cb);
+              return;
+            }
+          }
+          var v = parseInt(raw, cb);
+          currentValue = neg ? -v : v;
+        } else if (key === 'orig') {
+          raw = signMagInput.value.replace(/[\s\n]/g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          var width = getBitWidth();
+          if (!/^[01]+$/.test(raw) || raw.length !== width) {
+            errorMsg.textContent = t('errBits')(width);
+            return;
+          }
+          if (raw.charAt(0) === '0') {
+            currentValue = raw.length > 1 ? parseInt(raw.substring(1), 2) : 0;
+          } else {
+            currentValue = raw.length > 1 ? -parseInt(raw.substring(1), 2) : 0;
+          }
+        } else if (key === 'ones') {
+          raw = onesInput.value.replace(/[\s\n]/g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          var width = getBitWidth();
+          if (!/^[01]+$/.test(raw) || raw.length !== width) {
+            errorMsg.textContent = t('errBits')(width);
+            return;
+          }
+          var v = parseInt(raw, 2);
+          var onesAdjust = width >= 31 ? Math.pow(2, width) : (1 << width);
+          currentValue = raw.charAt(0) === '1' ? v - onesAdjust + 1 : v;
+        } else if (key === 'twos') {
+          raw = twosInput.value.replace(/[\s\n]/g, '').trim();
+          if (!raw) {
+            currentValue = 0;
+            errorMsg.textContent = '';
+            binInput.value = '';
+            octInput.value = '';
+            decInput.value = '';
+            hexInput.value = '';
+            customInput.value = '';
+            signMagInput.value = '';
+            onesInput.value = '';
+            twosInput.value = '';
+            return;
+          }
+          var width = getBitWidth();
+          if (!/^[01]+$/.test(raw) || raw.length !== width) {
+            errorMsg.textContent = t('errBits')(width);
+            return;
+          }
+          var v = parseInt(raw, 2);
+          var twosAdjust = width >= 31 ? Math.pow(2, width) : (1 << width);
+          currentValue = raw.charAt(0) === '1' ? v - twosAdjust : v;
+        } else {
+          return;
+        }
+
+        // Check range overflow - clamp instead of reject
+        var width = getBitWidth();
+        var minVal = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
+        var maxVal = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
+        var clamped = false;
+        if (currentValue < minVal) { currentValue = minVal; clamped = true; }
+        if (currentValue > maxVal) { currentValue = maxVal; clamped = true; }
+        if (clamped) {
+          errorMsg.textContent = t('errClamped')(currentValue, minVal, maxVal);
+          setTimeout(function() { errorMsg.textContent = ''; }, 3000);
+        }
+
+        refreshAllDisplays();
+      }
+
+      function onReset() {
+        currentValue = 0;
+        lastEditedField = null;
+        var fields = ['binInput', 'octInput', 'decInput', 'hexInput', 'customInput',
+          'signMagInput', 'onesInput', 'twosInput'];
+        for (var i = 0; i < fields.length; i++) {
+          document.getElementById(fields[i]).value = '';
+        }
+        // Also reset info panel
+        document.getElementById('infoVal').textContent = '0';
+        document.getElementById('infoUnsigned').textContent = '0';
+      }
+
+      function onCalculate() {
+        // If user hasn't edited any field yet, nothing to calculate
+        if (!lastEditedField) return;
+
+        var elems = {
+          bin: binInput,
+          oct: octInput,
+          dec: decInput,
+          hex: hexInput,
+          custom: customInput,
+          orig: signMagInput,
+          ones: onesInput,
+          twos: twosInput
+        };
+
+        var key = lastEditedField;
+        var raw = elems[key].value.replace(/[\s\n]/g, '').trim();
+        if (!raw) return;
+
+        if (key === 'bin') {
+          if (/^-?[01]+$/.test(raw)) {
+            var neg = raw.charAt(0) === '-';
+            if (neg) raw = raw.substring(1);
+            var v = parseInt(raw, 2);
+            currentValue = neg ? -v : v;
+          }
+        } else if (key === 'oct') {
+          if (/^-?[0-7]+$/.test(raw)) {
+            var neg = raw.charAt(0) === '-';
+            if (neg) raw = raw.substring(1);
+            var v = parseInt(raw, 8);
+            currentValue = neg ? -v : v;
+          }
+        } else if (key === 'dec') {
+          if (/^-?\d+$/.test(raw)) {
+            currentValue = parseInt(raw, 10);
+          }
+        } else if (key === 'hex') {
+          // V5.1: Require at least one hex digit (prevents lone '-' from silently clamping to minVal)
+          if (/^-?[0-9a-fA-F]+$/.test(raw) && raw !== '-') {
+            var neg = raw.charAt(0) === '-';
+            if (neg) raw = raw.substring(1);
+            var v = parseInt(raw, 16);
+            currentValue = neg ? -v : v;
+          }
+        } else if (key === 'custom') {
+          var cb = getCustomBase();
+          if (cb) {
+            var neg = raw.charAt(0) === '-';
+            if (neg) raw = raw.substring(1);
+            var valid = DIGITS.substring(0, cb);
+            var ok = true;
+            for (var i = 0; i < raw.length; i++) {
+              if (valid.indexOf(raw.charAt(i).toLowerCase()) === -1) { ok = false; break; }
+            }
+            if (ok) {
+              var v = parseInt(raw, cb);
+              currentValue = neg ? -v : v;
+            }
+          }
+        } else {
+          var width = getBitWidth();
+          if (/^[01]+$/.test(raw) && raw.length === width) {
+            if (key === 'orig') {
+              if (raw.charAt(0) === '0') {
+                currentValue = raw.length > 1 ? parseInt(raw.substring(1), 2) : 0;
+              } else {
+                currentValue = raw.length > 1 ? -parseInt(raw.substring(1), 2) : 0;
+              }
+            } else if (key === 'ones') {
+              var v = parseInt(raw, 2);
+              // Ones complement: use Math.pow for width >= 31 to avoid JS bitwise overflow
+              var onesAdj = width >= 31 ? Math.pow(2, width) : (1 << width);
+              currentValue = raw.charAt(0) === '1' ? v - onesAdj + 1 : v;
+            } else if (key === 'twos') {
+              var v = parseInt(raw, 2);
+              // Twos complement: use Math.pow for width >= 31 to avoid JS bitwise overflow
+              var twosAdj = width >= 31 ? Math.pow(2, width) : (1 << width);
+              currentValue = raw.charAt(0) === '1' ? v - twosAdj : v;
+            }
+          }
+        }
+
+        // Check range overflow - clamp instead of reject
+        var width = getBitWidth();
+        // Use Math.pow for width >= 32 to avoid JS bitwise overflow (1 << 31 is signed negative)
+        var minVal = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
+        var maxVal = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
+        var clamped = false;
+        if (currentValue < minVal) { currentValue = minVal; clamped = true; }
+        if (currentValue > maxVal) { currentValue = maxVal; clamped = true; }
+        if (clamped) {
+          // Show warning in config bar's error message area (universal for all fields)
+          var errEl2 = document.getElementById('errorMsg');
+          errEl2.textContent = t('errClamped')(currentValue, minVal, maxVal);
+          setTimeout(function() { var e = document.getElementById('errorMsg'); e.textContent = ''; }, 3000);
+        }
+
+        refreshAllDisplays();
+      }
+
+      function onCustomBaseChange() {
+        refreshAllDisplays();
+      }
+
+      function onBwChange() {
+        if (bitWidthSelect.value === 'custom') {
+          customBitWidthInput.disabled = false;
+        } else {
+          customBitWidthInput.disabled = true;
+        }
+        // V4: Skip refresh if all fields are empty (initial state) to avoid filling zeros
+        if (!areAllFieldsEmpty()) {
+          refreshAllDisplays();
+        }
+      }
+
+      function onCustomBwInput() {
+        var v = parseInt(customBitWidthInput.value, 10);
+        if (v > 0 && v <= 128) {
+          errorMsg.textContent = '';
+          // V4: Skip refresh if all fields are empty (initial state)
+          if (!areAllFieldsEmpty()) {
+            refreshAllDisplays();
+          }
+        } else if (v <= 0) {
+          errorMsg.textContent = t('errBw');
+        }
+      }
+
+      function onLangChange(lang) {
+        currentLang = lang;
+        applyI18n();
+      }
+
+      // Event listeners
+      binInput.oninput = function() { onInput('bin'); };
+      octInput.oninput = function() { onInput('oct'); };
+      decInput.oninput = function() { onInput('dec'); };
+      hexInput.oninput = function() { onInput('hex'); };
+      customInput.oninput = function() { onInput('custom'); };
+      customBaseEl.oninput = onCustomBaseChange;
+      signMagInput.oninput = function() { onInput('orig'); };
+      onesInput.oninput = function() { onInput('ones'); };
+      twosInput.oninput = function() { onInput('twos'); };
+
+      bitWidthSelect.onchange = onBwChange;
+      customBitWidthInput.oninput = onCustomBwInput;
+      var resetBtn = document.getElementById('resetBtn');
+      calcBtn.onclick = onCalculate;
+      resetBtn.onclick = onReset;
+
+      // Language toggle buttons
+      var langBtns = document.querySelectorAll('.lang-btn');
+      for (var i = 0; i < langBtns.length; i++) {
+        langBtns[i].onclick = function() { onLangChange(this.getAttribute('data-lang')); };
+      }
+
+      // Initialize
+      applyI18n();
+      refreshAllDisplays();
+      isInitializing = false;
+    })();
+  </script>
+</body>
+</html>
