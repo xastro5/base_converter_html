@@ -2,997 +2,588 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Base Converter</title>
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --bg: #f5f5f7;
-      --card-bg: #ffffff;
-      --text: #1d1d1f;
-      --text-secondary: #86868b;
-      --accent: #007aff;
-      --accent-hover: #0071e3;
-      --border: #d2d2d7;
-      --shadow: 0 4px 24px rgba(0,0,0,0.08);
-      --shadow-hover: 0 8px 32px rgba(0,0,0,0.12);
-      --radius: 12px;
-      --radius-lg: 16px;
+      color-scheme:light;
+      --bg:#f5f5f7; --surface:#fff; --text:#1d1d1f; --muted:#66666d; --line:#e4e4e9; --accent:#0071e3; --error:#ba2525;
+      --control-border:#d5d5dc; --control-bg:#fff; --field-border:#dedee5; --field-bg:#f7f7f9; --hover-bg:#eeeef2;
+      --selected-bg:#fff; --placeholder:#777780; --unavailable-bg:#fafafa; --help-active:#eaf3ff;
+      --range-text:#505057; --success:#167741; --divider:#eaeaf0; --soft-divider:#eeeef2; --secondary-hover:#eaeaf0;
+      --focus-ring:#0071e355; --focus-glow:#0071e31a; --button-bg:#0071e3; --button-hover:#0064c8;
+      --panel-shadow:0 4px 18px #00000003; --popover-shadow:0 8px 30px #0000001a; --selected-shadow:0 1px 4px #00000012;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+    :root[data-theme="dark"] {
+      color-scheme:dark;
+      --bg:#141416; --surface:#1e1e21; --text:#f5f5f7; --muted:#a5a5af; --line:#37373e; --accent:#75b7ff; --error:#ff8a80;
+      --control-border:#46464f; --control-bg:#29292e; --field-border:#414149; --field-bg:#28282d; --hover-bg:#35353c;
+      --selected-bg:#3c3c44; --placeholder:#9696a0; --unavailable-bg:#232327; --help-active:#183652;
+      --range-text:#c0c0ca; --success:#79d79d; --divider:#38383f; --soft-divider:#34343b; --secondary-hover:#303037;
+      --focus-ring:#75b7ff66; --focus-glow:#0a84ff2b; --button-bg:#0071e3; --button-hover:#0064c8;
+      --panel-shadow:0 4px 18px #0000000a; --popover-shadow:0 8px 30px #00000055; --selected-shadow:0 1px 4px #00000030;
     }
-    .container { width: 100%; max-width: 860px; }
-    .header { text-align: center; margin-bottom: 24px; }
-    .header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
-    .header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
-    .config-bar {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-      flex-wrap: wrap;
+    body { margin:0; min-height:100vh; padding:30px 24px 20px; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    button, input, select, textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:disabled { cursor:default; }
+    button, summary, input, select, textarea { -webkit-tap-highlight-color:transparent; }
+    :focus-visible { outline:3px solid var(--focus-ring); outline-offset:3px; }
+    [hidden] { display:none !important; }
+    .container { width:100%; max-width:1000px; margin:0 auto; }
+    .header { display:grid; grid-template-columns:36px minmax(0,1fr) 36px; align-items:center; text-align:center; margin-bottom:22px; }
+    .header h1 { grid-column:2; grid-row:1; }
+    .header .subtitle { grid-column:1/-1; grid-row:2; }
+    .theme-toggle { grid-column:3; grid-row:1; display:flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--line); border-radius:50%; color:var(--muted); background:var(--surface); }
+    .theme-toggle:hover { color:var(--text); background:var(--hover-bg); }
+    .theme-toggle .icon { width:17px; height:17px; }
+    h1 { margin:0; font-size:29px; line-height:1.2; font-weight:650; letter-spacing:-1px; }
+    .subtitle { margin:8px 0 0; font-size:14px; line-height:1.5; color:var(--muted); }
+    .config-bar { display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; padding:12px 18px; margin-bottom:16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+    .config-item { display:flex; align-items:center; gap:10px; }
+    .config-item label { font-size:12px; color:var(--muted); white-space:nowrap; }
+    .config-item select, .config-item input { height:34px; border:1px solid var(--control-border); background:var(--control-bg); border-radius:7px; padding:5px 9px; font-size:13px; color:var(--text); }
+    .config-item input { width:76px; }
+    .config-range { display:flex; flex:1 1 240px; align-items:baseline; flex-wrap:wrap; gap:5px 10px; min-width:0; padding-left:20px; border-left:1px solid var(--line); }
+    .range-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+    .range-value { min-width:0; font:12px/1.6 "SFMono-Regular",Consolas,"Liberation Mono",monospace; overflow-wrap:anywhere; color:var(--range-text); }
+    .config-bar[data-wide-range="true"] .config-range { order:2; flex-basis:100%; padding:10px 0 0; border-left:0; border-top:1px solid var(--line); }
+    .config-bar[data-wide-range="true"] .config-error { order:3; }
+    .lang-toggle { margin-left:auto; display:flex; padding:3px; gap:2px; border-radius:9px; background:var(--bg); }
+    .lang-btn { min-width:34px; height:28px; padding:3px 9px; border:0; border-radius:6px; color:var(--muted); background:transparent; font-size:12px; }
+    .lang-btn[aria-pressed="true"] { background:var(--selected-bg); color:var(--text); box-shadow:var(--selected-shadow); font-weight:600; }
+    .config-error { flex-basis:100%; margin:0; color:var(--error); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+    .main-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:stretch; }
+    .card { display:flex; flex-direction:column; min-width:0; padding:20px 22px; border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:var(--panel-shadow); }
+    .card-heading { margin-bottom:15px; }
+    h2 { margin:0; font-size:15px; font-weight:650; letter-spacing:-.2px; }
+    .card-subtitle { margin:5px 0 0; color:var(--muted); font-size:12px; line-height:1.5; }
+    .field { min-width:0; position:relative; margin-bottom:10px; }
+    .field-header { display:flex; align-items:center; min-height:28px; gap:6px; margin-bottom:2px; }
+    .field-header label { font-size:12px; font-weight:500; }
+    .field-tools { display:flex; align-items:center; gap:2px; margin-left:auto; }
+    .icon-button, .explanation summary { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border:0; border-radius:6px; background:transparent; color:var(--muted); }
+    .icon-button:hover:enabled, .explanation summary:hover { background:var(--hover-bg); color:var(--text); }
+    .icon-button:disabled { opacity:.28; }
+    .icon-button.is-copied { color:var(--success); }
+    .icon { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+    .icon-library { position:absolute; width:0; height:0; overflow:hidden; }
+    textarea { display:block; width:100%; min-height:42px; resize:none; overflow:hidden; border:1px solid var(--field-border); border-radius:9px; background:var(--field-bg); padding:10px 12px; color:var(--text); font:14px/1.55 "SFMono-Regular",Consolas,"Liberation Mono",monospace; letter-spacing:.01em; overflow-wrap:anywhere; white-space:pre-wrap; transition:border-color .15s,background .15s; }
+    textarea::placeholder { color:var(--placeholder); font-size:12px; letter-spacing:0; }
+    .encoding-card textarea { min-height:calc(3.1em + 22px); }
+    textarea:focus { outline:none; border-color:var(--accent); background:var(--control-bg); box-shadow:0 0 0 3px var(--focus-glow); }
+    textarea[aria-invalid="true"], input[aria-invalid="true"] { border-color:var(--error); }
+    .field-feedback { margin:7px 0 0; color:var(--error); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+    .field.is-unavailable .field-feedback { color:var(--muted); }
+    .field.is-unavailable textarea { border-style:dashed; background:var(--unavailable-bg); }
+    .custom-base-row { display:grid; grid-template-columns:76px minmax(0,1fr); gap:12px; align-items:start; margin-top:auto; }
+    .custom-base-row .field { margin-bottom:0; }
+    .radix-control { width:100%; height:44px; border:1px solid var(--field-border); border-radius:9px; background:var(--field-bg); padding:9px 10px; color:var(--text); font-size:14px; }
+    .explanation summary { cursor:pointer; list-style:none; }
+    .explanation summary::-webkit-details-marker { display:none; }
+    .explanation[open] summary { color:var(--accent); background:var(--help-active); }
+    .explanation .help { position:absolute; z-index:5; top:34px; right:0; width:min(310px,100%); margin:0; padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--popover-shadow); color:var(--text); font-size:13px; line-height:1.6; }
+    .encoding-note { margin:auto 0 0; padding-top:16px; color:var(--muted); font-size:11px; line-height:1.6; }
+    .actions { display:flex; justify-content:flex-end; gap:10px; margin:16px 0 0; }
+    .button { min-height:36px; padding:8px 16px; border:0; border-radius:8px; font-size:13px; font-weight:550; }
+    .button-secondary { color:var(--muted); background:transparent; }
+    .button-secondary:hover { color:var(--text); background:var(--secondary-hover); }
+    .button-primary { color:#fff; background:var(--button-bg); }
+    .button-primary:hover { background:var(--button-hover); }
+    .info-panel { margin-top:16px; border:1px solid var(--line); border-radius:18px; background:var(--surface); overflow:hidden; }
+    .info-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:18px 0; }
+    .info-item { min-width:0; padding:0 22px; }
+    .info-item + .info-item { border-left:1px solid var(--divider); }
+    .info-label { display:block; margin-bottom:7px; font-size:12px; color:var(--muted); line-height:1.4; }
+    .info-value { display:block; font:500 22px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace; letter-spacing:-.5px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+    .info-grid[data-long="true"] .info-value { font-size:16px; line-height:1.6; letter-spacing:0; }
+    footer { text-align:center; margin:20px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+    @media (max-width:680px) {
+      body { padding:24px 16px 16px; }
+      h1 { font-size:25px; }
+      .header { margin-bottom:20px; }
+      .subtitle { font-size:12px; }
+      .main-grid { grid-template-columns:minmax(0,1fr); gap:14px; }
+      .card { padding:18px; border-radius:15px; }
+      .card-heading { margin-bottom:14px; }
+      .config-bar { padding:10px 12px; gap:10px; }
+      .config-item { gap:6px; }
+      .config-item label { font-size:11px; }
+      .config-item select { max-width:112px; }
+      .config-range { order:2; flex-basis:100%; padding:10px 0 0; border-left:0; border-top:1px solid var(--line); }
+      .range-label { font-size:11px; }
+      .config-error { order:3; }
+      .lang-btn { min-width:29px; padding:3px 7px; }
+      .info-panel { border-radius:15px; }
+      .info-item { padding:0 18px; }
+      .info-label { font-size:11px; }
+      .info-value { font-size:20px; }
+      .actions { margin-top:14px; }
     }
-    .config-item { display: flex; align-items: center; gap: 8px; }
-    .config-item label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-    .config-item select,
-    .config-item input {
-      font-size: 13px;
-      font-family: inherit;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+    @media (max-width:800px) {
+      .info-grid[data-long="true"] { grid-template-columns:minmax(0,1fr); gap:16px; }
+      .info-grid[data-long="true"] .info-item + .info-item { border-left:0; padding-top:14px; border-top:1px solid var(--soft-divider); }
     }
-    .config-item select:focus,
-    .config-item input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+    @media (pointer:coarse) {
+      .header { grid-template-columns:44px minmax(0,1fr) 44px; }
+      .theme-toggle { width:44px; height:44px; }
+      .icon-button, .explanation summary { width:34px; height:34px; }
+      .button { min-height:44px; }
+      textarea { font-size:16px; }
+      .config-item input, .config-item select, .radix-control { font-size:16px; }
     }
-    .config-item input:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error-msg { font-size: 12px; color: #ff3b30; margin-left: auto; }
-    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 640px) { .main-grid { grid-template-columns: 1fr; } }
-    .card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      box-shadow: var(--shadow);
-      transition: box-shadow 0.3s;
-      animation: fadeIn 0.4s ease-out;
-    }
-    .card:hover { box-shadow: var(--shadow-hover); }
-    .card-header {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
-    }
-    .field { margin-bottom: 14px; }
-    .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
-    .field input,
-    .field textarea {
-      width: 100%;
-      font-family: 'Consolas', 'Monaco', monospace;
-      font-size: 14px;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    }
-    .field input:focus,
-    .field textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
-      background: #fff;
-    }
-    .field input::placeholder,
-    .field textarea::placeholder { color: #c7c7cc; }
-    .field input:hover,
-    .field textarea:hover { border-color: #b0b0b8; }
-    /* Adaptive height textarea — browser wraps at spaces via pre-wrap, no forced newlines */
-    .field textarea {
-      resize: vertical;
-      min-height: 42px;
-      overflow-wrap: break-word;
-      white-space: pre-wrap;
-      line-height: 1.5;
-    }
-    .custom-base-row {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .custom-base-row .field { margin-bottom: 0; }
-    .custom-base-row .field label { font-size: 11px; margin-bottom: 4px; }
-    .custom-base-row input[type="number"] { width: 70px; font-family: inherit; text-align: center; }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-primary { background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); color: #fff; box-shadow: 0 2px 8px rgba(0,122,255,0.3); }
-    .btn-primary:hover { background: linear-gradient(135deg, #0071e3 0%, #004a99 100%); box-shadow: 0 4px 16px rgba(0,122,255,0.4); }
-    .btn-primary:active { transform: scale(0.97); }
-    .btn-danger { background: linear-gradient(135deg, #ff3b30 0%, #c92a20 100%); color: #fff; box-shadow: 0 2px 8px rgba(255,59,48,0.3); }
-    .btn-danger:hover { background: linear-gradient(135deg, #e6352b 0%, #b0251c 100%); box-shadow: 0 4px 16px rgba(255,59,48,0.4); }
-    .btn-danger:active { transform: scale(0.97); }
-    .hint-text { font-size: 11px; color: var(--text-secondary); margin-top: 16px; text-align: center; font-style: italic; }
-    .btn-center { display: flex; justify-content: center; margin-top: 24px; gap: 20px; }
-    .info-panel { margin-top: 16px; }
-    .info-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 16px 20px;
-      box-shadow: var(--shadow);
-      animation: fadeIn 0.4s ease-out 0.1s both;
-      border: 1px solid rgba(0,0,0,0.04);
-    }
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-    .info-item {
-      background: linear-gradient(135deg, #f5f5f7 0%, #efeff1 100%);
-      border-radius: 8px;
-      padding: 12px 14px;
-      border: 1px solid rgba(0,0,0,0.04);
-    }
-    .info-item .label {
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-    .info-item .value {
-      font-family: 'Consolas', 'Monaco', monospace;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    ::selection { background: rgba(0,122,255,0.2); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Language toggle buttons */
-    .lang-toggle { display: flex; gap: 4px; }
-    .lang-toggle .lang-btn {
-      font-size: 12px;
-      font-family: inherit;
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .lang-toggle .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .lang-toggle .lang-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      font-weight: 500;
-    }
+    @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+  <svg class="icon-library" aria-hidden="true"><defs>
+    <symbol id="icon-copy" viewBox="0 0 20 20"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M12 4V3H3v9h1"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 20 20"><path d="m4 10 4 4 8-8"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6v.1"/></symbol>
+    <symbol id="icon-moon" viewBox="0 0 20 20"><path d="M16.8 11.7A7.2 7.2 0 0 1 8.3 3.2a7.2 7.2 0 1 0 8.5 8.5Z"/></symbol>
+    <symbol id="icon-sun" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3.5"/><path d="M10 1.5v1.3m0 14.4v1.3M1.5 10h1.3m14.4 0h1.3M4 4l.9.9m10.2 10.2.9.9M4 16l.9-.9M15.1 4.9 16 4"/></symbol>
+  </defs></svg>
+  <main class="container">
+    <header class="header">
       <h1 data-i18n="title">Base Converter</h1>
-      <p data-i18n="subtitle">Convert between binary, octal, decimal, hex, and custom bases</p>
-    </div>
-
-    <div class="config-bar">
+      <p class="subtitle" data-i18n="subtitle">One value, in every base and signed encoding.</p>
+      <button type="button" class="theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="Dark mode" title="Switch to dark mode"><svg class="icon" aria-hidden="true"><use href="#icon-moon"/></svg></button>
+    </header>
+    <div class="config-bar" role="group" aria-label="Conversion settings" data-label="settings">
       <div class="config-item">
-        <label data-i18n="bitWidth">Bit Width:</label>
+        <label for="bitWidth" data-i18n="bitWidth">Bit width</label>
         <select id="bitWidth">
-          <option value="4">4</option>
-          <option value="8" selected>8</option>
-          <option value="16">16</option>
-          <option value="32">32</option>
-          <option value="64">64</option>
-          <option value="custom">Custom</option>
+          <option value="4">4</option><option value="8" selected>8</option><option value="16">16</option><option value="32">32</option><option value="64">64</option><option value="custom" data-i18n="custom">Custom</option>
         </select>
       </div>
-      <div class="config-item">
-        <input type="number" id="customBitWidth" value="8" min="1" max="128" disabled style="width:64px">
+      <div class="config-item" id="customWidthGroup" hidden>
+        <label class="sr-only" for="customBitWidth" data-i18n="customWidth">Custom bit width</label>
+        <input id="customBitWidth" type="number" min="1" max="128" step="1" value="8" inputmode="numeric" disabled aria-describedby="errorMsg">
       </div>
-      <div class="config-item lang-toggle" style="min-width: 130px;">
-        <button class="lang-btn active" data-lang="en">EN</button>
-        <button class="lang-btn" data-lang="zh">中</button>
-        <button class="lang-btn" data-lang="fr">FR</button>
+      <div class="config-range"><span class="range-label" data-i18n="range">Signed range</span><span class="range-value" id="infoRange">[-128, 127]</span></div>
+      <div class="lang-toggle" role="group" aria-label="Language" data-label="language">
+        <button type="button" class="lang-btn" data-lang="en" lang="en" aria-label="English" aria-pressed="true">EN</button>
+        <button type="button" class="lang-btn" data-lang="zh" lang="zh" aria-label="中文" aria-pressed="false">中</button>
+        <button type="button" class="lang-btn" data-lang="fr" lang="fr" aria-label="Français" aria-pressed="false">FR</button>
       </div>
-      <div class="error-msg" id="errorMsg"></div>
+      <p id="errorMsg" class="config-error" hidden></p>
     </div>
-
     <div class="main-grid">
-      <div class="card">
-        <div class="card-header" data-i18n="baseConversion">Base Conversion</div>
+      <section class="card" aria-labelledby="numberHeading">
+        <div class="card-heading"><h2 id="numberHeading" data-i18n="number">Number</h2><p class="card-subtitle" data-i18n="numberHint">Signed values in different bases.</p></div>
         <div class="field">
-          <label data-i18n="binary">Binary</label>
-          <textarea id="binInput" placeholder="e.g. 1010 0101"></textarea>
+          <div class="field-header"><label for="binInput" data-i18n="binary">Binary</label><div class="field-tools" data-tools="binInput"></div></div>
+          <textarea id="binInput" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" dir="ltr" placeholder="−111011" aria-describedby="binInputFeedback"></textarea>
+          <p class="field-feedback" id="binInputFeedback" hidden></p>
         </div>
         <div class="field">
-          <label data-i18n="octal">Octal</label>
-          <input type="text" id="octInput" placeholder="e.g. 225">
+          <div class="field-header"><label for="octInput" data-i18n="octal">Octal</label><div class="field-tools" data-tools="octInput"></div></div>
+          <textarea id="octInput" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" dir="ltr" placeholder="−73" aria-describedby="octInputFeedback"></textarea>
+          <p class="field-feedback" id="octInputFeedback" hidden></p>
         </div>
         <div class="field">
-          <label data-i18n="decimal">Decimal</label>
-          <input type="text" id="decInput" placeholder="e.g. -59">
+          <div class="field-header"><label for="decInput" data-i18n="decimal">Decimal</label><div class="field-tools" data-tools="decInput"></div></div>
+          <textarea id="decInput" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" dir="ltr" placeholder="−59" aria-describedby="decInputFeedback"></textarea>
+          <p class="field-feedback" id="decInputFeedback" hidden></p>
         </div>
         <div class="field">
-          <label data-i18n="hexadecimal">Hexadecimal</label>
-          <input type="text" id="hexInput" placeholder="e.g. C5">
+          <div class="field-header"><label for="hexInput" data-i18n="hexadecimal">Hexadecimal</label><div class="field-tools" data-tools="hexInput"></div></div>
+          <textarea id="hexInput" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" dir="ltr" placeholder="−3B" aria-describedby="hexInputFeedback"></textarea>
+          <p class="field-feedback" id="hexInputFeedback" hidden></p>
         </div>
         <div class="custom-base-row">
+          <div class="field"><div class="field-header"><label for="customBase" data-i18n="base">Base</label></div><input class="radix-control" id="customBase" type="number" min="2" max="36" step="1" value="10" inputmode="numeric" aria-describedby="errorMsg"></div>
           <div class="field">
-            <label data-i18n="customBase">Custom Base</label>
-            <input type="number" id="customBase" value="10" min="2" max="36">
-          </div>
-          <div class="field">
-            <label data-i18n="value">Value</label>
-            <input type="text" id="customInput" placeholder="e.g. 123">
+            <div class="field-header"><label for="customInput" data-i18n="customValue">Custom value</label><div class="field-tools" data-tools="customInput"></div></div>
+            <textarea id="customInput" rows="1" spellcheck="false" autocapitalize="off" autocomplete="off" dir="ltr" placeholder="−59" aria-describedby="customInputFeedback"></textarea>
+            <p class="field-feedback" id="customInputFeedback" hidden></p>
           </div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header" data-i18n="complementCodes">Complement Codes</div>
+      </section>
+      <section class="card encoding-card" aria-labelledby="encodingHeading">
+        <div class="card-heading"><h2 id="encodingHeading" data-i18n="encoding">Bit representation</h2><p class="card-subtitle" data-i18n="encodingHint">The same value, encoded at a fixed width.</p></div>
         <div class="field">
-          <label data-i18n="signMag">Sign Magnitude</label>
-          <textarea id="signMagInput" placeholder="e.g. 1010 0101"></textarea>
-        </div>
-        <div class="field">
-          <label data-i18n="onesComp">Ones Complement</label>
-          <textarea id="onesInput" placeholder="e.g. 1100 1010"></textarea>
+          <div class="field-header"><label for="signMagInput" data-i18n="signMag">Sign magnitude</label><div class="field-tools" data-tools="signMagInput"></div></div>
+          <textarea id="signMagInput" rows="2" spellcheck="false" inputmode="numeric" autocomplete="off" dir="ltr" placeholder="1011 1011" aria-describedby="signMagInputFeedback"></textarea>
+          <p class="field-feedback" id="signMagInputFeedback" hidden></p>
         </div>
         <div class="field">
-          <label data-i18n="twosComp">Twos Complement</label>
-          <textarea id="twosInput" placeholder="e.g. 1100 1011"></textarea>
+          <div class="field-header"><label for="onesInput" data-i18n="ones">Ones complement</label><div class="field-tools" data-tools="onesInput"></div></div>
+          <textarea id="onesInput" rows="2" spellcheck="false" inputmode="numeric" autocomplete="off" dir="ltr" placeholder="1100 0100" aria-describedby="onesInputFeedback"></textarea>
+          <p class="field-feedback" id="onesInputFeedback" hidden></p>
         </div>
-        <p class="hint-text" data-i18n="hint">Sign bit (MSB) indicates sign; remaining bits hold magnitude</p>
-        <div class="btn-center">
-          <button class="btn btn-danger" id="resetBtn" data-i18n="reset">Reset</button>
-          <button class="btn btn-primary" id="calcBtn" data-i18n="calcAll">Calculate All</button>
+        <div class="field">
+          <div class="field-header"><label for="twosInput" data-i18n="twos">Twos complement</label><div class="field-tools" data-tools="twosInput"></div></div>
+          <textarea id="twosInput" rows="2" spellcheck="false" inputmode="numeric" autocomplete="off" dir="ltr" placeholder="1100 0101" aria-describedby="twosInputFeedback"></textarea>
+          <p class="field-feedback" id="twosInputFeedback" hidden></p>
         </div>
-      </div>
+        <p class="encoding-note" data-i18n="encodingNote">Each encoding can be edited. Use ⓘ to see how it works.</p>
+        <div class="actions"><button type="button" class="button button-secondary" id="resetBtn" data-i18n="reset">Reset</button><button type="button" class="button button-primary" id="calcBtn" data-i18n="calculate">Calculate</button></div>
+      </section>
     </div>
-
-    <div class="info-panel">
-      <div class="info-card">
-        <div class="card-header" data-i18n="information">Information</div>
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="label" data-i18n="infoBw">Bit Width</div>
-            <div class="value" id="infoBw">8</div>
-          </div>
-          <div class="info-item">
-            <div class="label" data-i18n="infoSigned">Value (Signed)</div>
-            <div class="value" id="infoVal">0</div>
-          </div>
-          <div class="info-item">
-            <div class="label" data-i18n="infoUnsigned">Value (Unsigned)</div>
-            <div class="value" id="infoUnsigned">0</div>
-          </div>
-          <div class="info-item">
-            <div class="label" data-i18n="infoRange">Range</div>
-            <div class="value" id="infoRange">[-128, 127]</div>
-          </div>
-        </div>
+    <section class="info-panel" aria-label="Conversion information" data-label="information">
+      <div class="info-grid">
+        <div class="info-item"><span class="info-label" data-i18n="signed">Signed value</span><span class="info-value" id="infoVal">—</span></div>
+        <div class="info-item"><span class="info-label" data-i18n="unsignedLabel" data-title="unsigned" title="Twos complement · unsigned value">Unsigned value</span><span class="info-value" id="infoUnsigned" aria-describedby="unsignedMeaning">—</span><span class="sr-only" id="unsignedMeaning" data-i18n="unsigned">Twos complement · unsigned value</span></div>
       </div>
-    </div>
-    <footer style="text-align: center; padding: 16px 24px 24px; font-size: 12px; color: #86868b; width: 100%;">
-      <p>Author: astro5 &nbsp;·&nbsp; Copyright © 2025-2026 xastro5. All rights reserved.</p>
-    </footer>
-  </div>
-
+    </section>
+    <footer>astro5 · Copyright © 2025–2026 xastro5. All rights reserved.</footer>
+    <p class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript>This converter needs JavaScript enabled in a modern browser.</noscript>
+  </main>
   <script>
-    (function() {
-      var DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
+    'use strict';
+    // BEGIN INTEGER MATH — pure functions; numeric values never pass through Number.
+    const IntegerMath = (() => {
+      const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+      const normalize = raw => raw.replace(/\u2212/g, '-').replace(/\s/g, '');
+      function boundedInteger(raw, min, max) {
+        if (!/^\d+$/.test(raw)) return null;
+        const n = Number(raw);
+        return Number.isSafeInteger(n) && n >= min && n <= max ? n : null;
+      }
+      function limits(width) {
+        if (!Number.isInteger(width) || width < 1 || width > 128) throw new RangeError('width');
+        const half = 1n << BigInt(width - 1);
+        return { min: -half, max: half - 1n, mask: (half << 1n) - 1n };
+      }
+      function parseRadix(input, base) {
+        if (!Number.isInteger(base) || base < 2 || base > 36) return { status:'invalid', code:'base' };
+        let raw = normalize(input).toLowerCase();
+        if (!raw) return { status:'empty' };
+        let negative = false;
+        if (raw[0] === '-' || raw[0] === '+') {
+          negative = raw[0] === '-';
+          raw = raw.slice(1);
+        }
+        const prefix = {2:'0b', 8:'0o', 16:'0x'}[base];
+        if (prefix && raw.startsWith(prefix)) raw = raw.slice(2);
+        if (!raw) return { status:'incomplete', code:'incomplete' };
+        if (raw.length > 1024) return { status:'invalid', code:'tooLong' };
+        let value = 0n;
+        for (const char of raw) {
+          const digit = digits.indexOf(char);
+          if (digit < 0 || digit >= base) return { status:'invalid', code:'digit', base };
+          value = value * BigInt(base) + BigInt(digit);
+        }
+        return { status:'valid', value:negative ? -value : value };
+      }
+      function parsePattern(input, width, kind) {
+        const range = limits(width);
+        const raw = normalize(input).replace(/^0b/i, '');
+        if (!normalize(input)) return { status:'empty' };
+        if (!raw) return { status:'incomplete', code:'incomplete' };
+        if (!/^[01]+$/.test(raw)) return { status:'invalid', code:'binaryDigits' };
+        if (raw.length !== width) return { status:'invalid', code:'bits', width };
+        const unsigned = BigInt('0b' + raw);
+        let value = unsigned;
+        if (raw[0] === '1') {
+          if (kind === 'sm') value = -(unsigned - (1n << BigInt(width - 1)));
+          else if (kind === 'ones') value = unsigned - range.mask;
+          else if (kind === 'twos') value = unsigned - range.mask - 1n;
+          else throw new TypeError('encoding');
+        }
+        return { status:'valid', value };
+      }
+      function represent(value, width, base) {
+        const range = limits(width);
+        if (typeof value !== 'bigint' || value < range.min || value > range.max) throw new RangeError('value');
+        if (!Number.isInteger(base) || base < 2 || base > 36) throw new RangeError('base');
+        const magnitude = value < 0n ? -value : value;
+        const unsigned = BigInt.asUintN(width, value);
+        const representable = magnitude <= range.max;
+        const sm = representable ? (value < 0n ? '1' : '0') + (width === 1 ? '' : magnitude.toString(2).padStart(width - 1, '0')) : null;
+        const ones = representable ? (value < 0n ? range.mask - magnitude : value).toString(2).padStart(width, '0') : null;
+        return {
+          binInput:value.toString(2), octInput:value.toString(8), decInput:value.toString(),
+          hexInput:value.toString(16).toUpperCase(), customInput:value.toString(base),
+          signMagInput:sm, onesInput:ones, twosInput:unsigned.toString(2).padStart(width, '0'),
+          unsigned:unsigned.toString()
+        };
+      }
+      return Object.freeze({ normalize, boundedInteger, limits, parseRadix, parsePattern, represent });
+    })();
+    // END INTEGER MATH
 
-      // === i18n ===
-      var I18N = {
+    (() => {
+      const I18N = {
         en: {
-          title: 'Base Converter',
-          subtitle: 'Convert between binary, octal, decimal, hex, and custom bases',
-          bitWidth: 'Bit Width:',
-          baseConversion: 'Base Conversion',
-          binary: 'Binary',
-          octal: 'Octal',
-          decimal: 'Decimal',
-          hexadecimal: 'Hexadecimal',
-          customBase: 'Custom Base',
-          value: 'Value',
-          complementCodes: 'Complement Codes',
-          signMag: 'Sign Magnitude',
-          onesComp: 'Ones Complement',
-          twosComp: 'Twos Complement',
-          hint: 'Sign bit (MSB) indicates sign; remaining bits hold magnitude',
-          reset: 'Reset',
-          calcAll: 'Calculate All',
-          information: 'Information',
-          infoBw: 'Bit Width',
-          infoSigned: 'Value (Signed)',
-          infoUnsigned: 'Value (Unsigned)',
-          infoRange: 'Range',
-          errBin: 'Invalid binary digit (use 0 or 1)',
-          errOct: 'Invalid octal digit (use 0-7)',
-          errDec: 'Invalid decimal number',
-          errHex: 'Invalid hex digit (use 0-9, A-F)',
-          errCust: function(cb) { return 'Invalid digit for base ' + cb + ' (use 0-' + DIGITS.charAt(cb - 1) + ')'; },
-          errBits: function(w) { return 'Must be exactly ' + w + ' bits'; },
-          errClamped: function(v, min, max) { return 'Clamped to ' + v + ' (range: [' + min + ', ' + max + '])'; },
-          errBw: 'Bit width must be > 0'
+          title:'Base Converter', subtitle:'One value, in every base and signed encoding.', settings:'Conversion settings', language:'Language',
+          darkMode:'Dark mode', switchDark:'Switch to dark mode', switchLight:'Switch to light mode',
+          bitWidth:'Bit width', custom:'Custom', customWidth:'Custom bit width', number:'Number', numberHint:'Signed values in different bases.',
+          encoding:'Bit representation', encodingHint:'The same value, encoded at a fixed width.', binary:'Binary', octal:'Octal', decimal:'Decimal',
+          hexadecimal:'Hexadecimal', base:'Base', customValue:'Custom value', signMag:'Sign magnitude', ones:'Ones complement', twos:'Twos complement',
+          encodingNote:'Each encoding can be edited. Use ⓘ to see how it works.', reset:'Reset', calculate:'Calculate', information:'Conversion information',
+          signed:'Signed value', unsigned:'Twos complement · unsigned value', unsignedLabel:'Unsigned value', range:'Signed range', footer:'A single file. Works offline.',
+          smHelp:'The first bit is the sign: 0 for positive, 1 for negative. The remaining bits hold the magnitude. Both positive and negative zero decode to 0.',
+          onesHelp:'For a negative number, invert every bit of its positive encoding. This representation has both positive and negative zero; both decode to 0.',
+          twosHelp:'For a negative number, invert every bit of its positive encoding, then add 1. This is also 2ⁿ + value, where n is the bit width. Zero has one encoding.',
+          copy: name => 'Copy ' + name, about:name => 'About ' + name, copied:name => name + ' copied.',
+          copyFailed:'Unable to copy. Select the value and use your device’s Copy command.',
+          widthError:'Enter a whole bit width from 1 to 128.', baseError:'Enter a whole base from 2 to 36.',
+          incomplete:'Enter at least one digit after the sign or prefix.', tooLong:'Use at most 1,024 digits.',
+          digit:base => 'Use ' + (base <= 10 ? 'digits 0–' + (base - 1) : 'digits 0–9 and letters A–' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[base - 11]) + ' for base ' + base + '.',
+          binaryDigits:'Use only 0 and 1 for a bit representation.',
+          bits:width => 'Enter exactly ' + width + ' bits. Spaces and a 0b prefix are allowed.',
+          outOfRange:(min,max) => 'Outside the signed range. Enter a value from ' + min + ' to ' + max + ', or increase the bit width.',
+          unavailable:'Not representable',
+          unavailableRange:(width,max) => 'At ' + width + ' bits, this encoding supports ' + (max === '0' ? '0 only.' : '−' + max + ' to ' + max + '.')
         },
         zh: {
-          title: '进制转换器',
-          subtitle: '在二进制、八进制、十进制、十六进制和自定义进制之间转换',
-          bitWidth: '位宽：',
-          baseConversion: '进制转换',
-          binary: '二进制',
-          octal: '八进制',
-          decimal: '十进制',
-          hexadecimal: '十六进制',
-          customBase: '自定义进制',
-          value: '数值',
-          complementCodes: '补码',
-          signMag: '原码',
-          onesComp: '反码',
-          twosComp: '补码',
-          hint: '符号位（MSB）表示正负；其余位表示数值',
-          reset: '重置',
-          calcAll: '全部计算',
-          information: '信息',
-          infoBw: '位宽',
-          infoSigned: '数值（有符号）',
-          infoUnsigned: '数值（无符号）',
-          infoRange: '范围',
-          errBin: '无效的二进制数字（仅使用 0 或 1）',
-          errOct: '无效的八进制数字（仅使用 0-7）',
-          errDec: '无效的十进制数字',
-          errHex: '无效的十六进制数字（仅使用 0-9, A-F）',
-          errCust: function(cb) { return '无效的数字，请使用 0-' + DIGITS.charAt(cb - 1) + '（进制 ' + cb + '）'; },
-          errBits: function(w) { return '必须恰好为 ' + w + ' 位'; },
-          errClamped: function(v, min, max) { return '已限制到 ' + v + '（范围：[' + min + ', ' + max + ']）'; },
-          errBw: '位宽必须 > 0'
+          title:'进制转换器', subtitle:'同一个数值，不同进制与有符号编码。', settings:'转换设置', language:'语言',
+          darkMode:'深色模式', switchDark:'切换为深色模式', switchLight:'切换为浅色模式',
+          bitWidth:'位宽', custom:'自定义', customWidth:'自定义位宽', number:'数值', numberHint:'以不同进制表示有符号数值。',
+          encoding:'位表示', encodingHint:'以固定的位宽编码同一个数值。', binary:'二进制', octal:'八进制', decimal:'十进制',
+          hexadecimal:'十六进制', base:'进制', customValue:'自定义数值', signMag:'原码', ones:'反码', twos:'补码',
+          encodingNote:'每种编码均可编辑。点击 ⓘ 查看说明。', reset:'重置', calculate:'计算', information:'转换信息',
+          signed:'有符号数值', unsigned:'补码对应的无符号数值', unsignedLabel:'无符号数值', range:'有符号范围', footer:'单个文件，离线可用。',
+          smHelp:'首位是符号位：0 表示正，1 表示负。其余位表示绝对值。正零和负零都解码为 0。',
+          onesHelp:'负数的反码是将其正数编码逐位取反。反码有正零和负零，两者都解码为 0。',
+          twosHelp:'负数的补码是将其正数编码逐位取反后加 1，也等于 2ⁿ 加上该负数（n 为位宽）。零只有一种编码。',
+          copy:name => '复制' + name, about:name => name + '说明', copied:name => '已复制' + name + '。',
+          copyFailed:'无法复制。请选中数值并使用设备的复制命令。',
+          widthError:'请输入 1 至 128 之间的整数位宽。', baseError:'请输入 2 至 36 之间的整数进制。',
+          incomplete:'请在符号或前缀后输入至少一位数字。', tooLong:'最多输入 1,024 位数字。',
+          digit:base => '请输入适用于 ' + base + ' 进制的数字：' + (base <= 10 ? '0–' + (base - 1) : '0–9、A–' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[base - 11]) + '。',
+          binaryDigits:'位表示中只能使用 0 和 1。', bits:width => '请输入恰好 ' + width + ' 位，可包含空格和 0b 前缀。',
+          outOfRange:(min,max) => '超出有符号范围。请输入 ' + min + ' 至 ' + max + ' 之间的数值，或增加位宽。',
+          unavailable:'无法表示', unavailableRange:(width,max) => width + ' 位的此编码' + (max === '0' ? '只能表示 0。' : '支持 −' + max + ' 至 ' + max + '。')
         },
         fr: {
-          title: 'Convertisseur de Base',
-          subtitle: 'Convertir entre binaire, octal, décimal, hexadécimal et bases personnalisées',
-          bitWidth: 'Largeur (bits) :',
-          baseConversion: 'Conversion de Base',
-          binary: 'Binaire',
-          octal: 'Octal',
-          decimal: 'Décimal',
-          hexadecimal: 'Hexadécimal',
-          customBase: 'Base Perso.',
-          value: 'Valeur',
-          complementCodes: 'Codes Complémentaires',
-          signMag: 'Signe & Magnitude',
-          onesComp: 'Complément à 1',
-          twosComp: 'Complément à 2',
-          hint: 'Le bit de signe (MSB) indique le signe ; les bits restants contiennent la magnitude',
-          reset: 'Réinitialiser',
-          calcAll: 'Tout Calculer',
-          information: 'Informations',
-          infoBw: 'Largeur',
-          infoSigned: 'Valeur (Signée)',
-          infoUnsigned: 'Valeur (Non signée)',
-          infoRange: 'Plage',
-          errBin: 'Chiffre binaire invalide (utilisez 0 ou 1)',
-          errOct: 'Chiffre octal invalide (utilisez 0-7)',
-          errDec: 'Nombre décimal invalide',
-          errHex: 'Chiffre hexadécimal invalide (utilisez 0-9, A-F)',
-          errCust: function(cb) { return 'Chiffre invalide pour la base ' + cb + ' (utilisez 0-' + DIGITS.charAt(cb - 1) + ')'; },
-          errBits: function(w) { return 'Doit être exactement ' + w + ' bits'; },
-          errClamped: function(v, min, max) { return 'Limité à ' + v + ' (plage : [' + min + ', ' + max + '])'; },
-          errBw: 'La largeur doit être > 0'
+          title:'Convertisseur de base', subtitle:'Une valeur, dans chaque base et encodage signé.', settings:'Réglages de conversion', language:'Langue',
+          darkMode:'Mode sombre', switchDark:'Passer au mode sombre', switchLight:'Passer au mode clair',
+          bitWidth:'Bits', custom:'Autre', customWidth:'Nombre de bits personnalisé', number:'Nombre', numberHint:'Valeurs signées dans différentes bases.',
+          encoding:'Représentation binaire', encodingHint:'La même valeur, encodée sur un nombre fixe de bits.', binary:'Binaire', octal:'Octal', decimal:'Décimal',
+          hexadecimal:'Hexadécimal', base:'Base', customValue:'Valeur personnalisée', signMag:'Signe et valeur absolue', ones:'Complément à un', twos:'Complément à deux',
+          encodingNote:'Chaque encodage est modifiable. Le bouton ⓘ explique son fonctionnement.', reset:'Réinitialiser', calculate:'Calculer', information:'Informations de conversion',
+          signed:'Valeur signée', unsigned:'Complément à deux · valeur non signée', unsignedLabel:'Valeur non signée', range:'Plage signée', footer:'Un seul fichier. Utilisable hors ligne.',
+          smHelp:'Le premier bit donne le signe : 0 pour positif, 1 pour négatif. Les autres bits donnent la valeur absolue. Les deux encodages de zéro sont décodés en 0.',
+          onesHelp:'Pour un nombre négatif, inversez chaque bit de son encodage positif. Il existe un zéro positif et un zéro négatif ; tous deux sont décodés en 0.',
+          twosHelp:'Pour un nombre négatif, inversez chaque bit de son encodage positif, puis ajoutez 1. Cela équivaut à 2ⁿ + valeur, où n est le nombre de bits. Zéro a un seul encodage.',
+          copy:name => 'Copier : ' + name, about:name => 'À propos : ' + name, copied:name => name + ' copié.',
+          copyFailed:'Copie impossible. Sélectionnez la valeur et utilisez la commande Copier de votre appareil.',
+          widthError:'Saisissez un nombre entier de bits entre 1 et 128.', baseError:'Saisissez une base entière entre 2 et 36.',
+          incomplete:'Saisissez au moins un chiffre après le signe ou le préfixe.', tooLong:'Utilisez au maximum 1 024 chiffres.',
+          digit:base => 'Utilisez ' + (base <= 10 ? 'les chiffres 0–' + (base - 1) : '0–9 et les lettres A–' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[base - 11]) + ' en base ' + base + '.',
+          binaryDigits:'Utilisez uniquement 0 et 1 pour un encodage binaire.',
+          bits:width => 'Saisissez exactement ' + width + ' bits. Les espaces et le préfixe 0b sont acceptés.',
+          outOfRange:(min,max) => 'Hors de la plage signée. Saisissez une valeur entre ' + min + ' et ' + max + ', ou augmentez le nombre de bits.',
+          unavailable:'Non représentable', unavailableRange:(width,max) => 'Sur ' + width + ' bits, cet encodage accepte ' + (max === '0' ? 'uniquement 0.' : '−' + max + ' à ' + max + '.')
         }
       };
-
-      var currentLang = 'en';
-
-      function applyI18n() {
-        var t = I18N[currentLang];
-        var elems = document.querySelectorAll('[data-i18n]');
-        for (var i = 0; i < elems.length; i++) {
-          var key = elems[i].getAttribute('data-i18n');
-          if (t[key]) elems[i].textContent = t[key];
+      const $ = id => document.getElementById(id);
+      const fields = ['binInput','octInput','decInput','hexInput','customInput','signMagInput','onesInput','twosInput'];
+      const names = {binInput:'binary',octInput:'octal',decInput:'decimal',hexInput:'hexadecimal',customInput:'customValue',signMagInput:'signMag',onesInput:'ones',twosInput:'twos'};
+      const patterns = {signMagInput:'sm',onesInput:'ones',twosInput:'twos'};
+      const helpKeys = {signMagInput:'smHelp',onesInput:'onesHelp',twosInput:'twosHelp'};
+      let language = 'en';
+      let darkMode = false;
+      let model = {source:null,raw:'',candidate:null};
+      let copyValues = {};
+      const copyTimers = new Map();
+      const originalPlaceholders = Object.fromEntries(fields.map(id => [id,$(id).placeholder]));
+      const t = (key,...args) => typeof I18N[language][key] === 'function' ? I18N[language][key](...args) : I18N[language][key];
+      function icon(name) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        svg.setAttribute('class','icon'); svg.setAttribute('aria-hidden','true');
+        const use = document.createElementNS('http://www.w3.org/2000/svg','use');
+        use.setAttribute('href','#icon-' + name); svg.append(use); return svg;
+      }
+      for (const id of fields) {
+        const tools = document.querySelector('[data-tools="' + id + '"]');
+        if (helpKeys[id]) {
+          const details = document.createElement('details'); details.className = 'explanation';
+          const summary = document.createElement('summary'); summary.dataset.about = id; summary.append(icon('info'));
+          const help = document.createElement('p'); help.className = 'help'; help.dataset.i18n = helpKeys[id];
+          details.append(summary,help); tools.append(details);
         }
-        // Update active lang button
-        var btns = document.querySelectorAll('.lang-btn');
-        for (var j = 0; j < btns.length; j++) {
-          btns[j].classList.toggle('active', btns[j].getAttribute('data-lang') === currentLang);
-        }
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'icon-button'; button.dataset.copy = id; button.disabled = true; button.append(icon('copy'));
+        tools.append(button);
       }
-
-      function t(key) {
-        return I18N[currentLang][key];
-      }
-
-      // === DOM refs ===
-      var binInput = document.getElementById('binInput');
-      var octInput = document.getElementById('octInput');
-      var decInput = document.getElementById('decInput');
-      var hexInput = document.getElementById('hexInput');
-      var customBaseEl = document.getElementById('customBase');
-      var customInput = document.getElementById('customInput');
-      var signMagInput = document.getElementById('signMagInput');
-      var onesInput = document.getElementById('onesInput');
-      var twosInput = document.getElementById('twosInput');
-      var bitWidthSelect = document.getElementById('bitWidth');
-      var customBitWidthInput = document.getElementById('customBitWidth');
-      var calcBtn = document.getElementById('calcBtn');
-      var errorMsg = document.getElementById('errorMsg');
-
-      var currentValue = 0;
-      var isUpdating = false;
-      var isInitializing = true;
-      var lastEditedField = null;
-
-      function getBitWidth() {
-        var sel = bitWidthSelect.value;
-        if (sel === 'custom') {
-          var v = parseInt(customBitWidthInput.value, 10);
-          return (v > 0) ? v : 8;
-        }
-        return parseInt(sel, 10);
-      }
-
-      function getCustomBase() {
-        var b = parseInt(customBaseEl.value, 10);
-        return (b >= 2 && b <= 36) ? b : null;
-      }
-
-      function formatWithSpaces(s, group) {
-        group = group || 4;
-        if (!s || s.length <= group) return s || '';
-        // Group from RIGHT by 'group', no padding — 残段出现在左侧
-        var rem = s.length % group;
-        var result = '';
-        if (rem > 0) {
-          // Leading remainder (残段) on the left, then remaining chars grouped by 'group'
-          var rest = s.substring(rem);
-          for (var i = 0; i < rest.length; i += group) {
-            if (result) result += ' ';
-            result += rest.substring(i, i + group);
-          }
-          result = s.substring(0, rem) + (result ? ' ' + result : '');
-        } else {
-          // Exact multiple of group: simple right-to-left grouping
-          for (var i = s.length - group; i >= 0; i -= group) {
-            if (result) result = ' ' + result;
-            result = s.substring(i, i + group) + result;
-          }
-        }
-        return result;
-      }
-
-      // Utility for zero-padding a string to a given width
-      function zeroPad(str, width) {
-        var p = '';
-        for (var i = str.length; i < width; i++) p += '0';
-        return p + str;
-      }
-
-      // V4: Check if all input fields are empty (initial state)
-      function areAllFieldsEmpty() {
-        var fields = [binInput, octInput, decInput, hexInput, customInput,
-          signMagInput, onesInput, twosInput];
-        for (var i = 0; i < fields.length; i++) {
-          if (fields[i].value.trim() !== '') return false;
-        }
-        return true;
-      }
-
-      function refreshAllDisplays() {
-        if (isUpdating) return;
-        isUpdating = true;
-        try {
-          // Clear error message on successful display refresh
-          errorMsg.textContent = '';
-          var val = currentValue;
-          var width = getBitWidth();
-          // Use Math.pow for width >= 31 to avoid JS bitwise overflow (1 << 31 is signed, 1 << 32 wraps)
-          var mask = width >= 31 ? Math.pow(2, width) - 1 : (1 << width) - 1;
-
-          // Only populate inputs when not initializing (avoids showing zeros on load)
-          if (!isInitializing) {
-            // Binary: V3 — negative shows -(abs(val).toString(2)), positive shows val.toString(2)
-            if (val < 0) {
-              binInput.value = '-' + formatWithSpaces(Math.abs(val).toString(2));
-            } else {
-              binInput.value = formatWithSpaces(val.toString(2));
-            }
-
-            // Octal, Decimal, Hex — V3: negative shows -(abs(val).toString(base))
-            if (val < 0) {
-              octInput.value = '-' + Math.abs(val).toString(8);
-              hexInput.value = '-' + Math.abs(val).toString(16).toUpperCase();
-            } else {
-              octInput.value = val.toString(8);
-              hexInput.value = val.toString(16).toUpperCase();
-            }
-            decInput.value = val.toString();
-
-            // Custom base — no grouping (V3)
-            var cb = getCustomBase();
-            if (cb) {
-              var t = Math.abs(val);
-              var res = '';
-              while (t > 0) {
-                res = DIGITS.charAt(t % cb) + res;
-                t = Math.floor(t / cb);
-              }
-              var customResult = (val < 0 ? '-' : '') + (res || '0');
-              customInput.value = customResult;
-            }
-
-            // Twos complement: stored representation (masked)
-            var twosVal = val & mask;
-            var twosStr = zeroPad(twosVal.toString(2), width);
-            twosInput.value = formatWithSpaces(twosStr);
-
-            // Sign magnitude and ones complement
-            if (val >= 0) {
-              var magBits = val === 0 ? '0' : val.toString(2);
-              var sm = '0' + zeroPad(magBits, width - 1);
-              signMagInput.value = formatWithSpaces(sm);
-              onesInput.value = formatWithSpaces(sm);
-            } else {
-              var mag = Math.abs(val);
-              var magBits = mag.toString(2);
-              // Overflow: if magnitude needs MORE than width-1 bits, sign mag cannot represent it
-              if (magBits.length > width - 1) {
-                // Show overflow indicator: width bits of '?'
-                var overflow = '';
-                for (var oi = 0; oi < width; oi++) overflow += '?';
-                signMagInput.value = formatWithSpaces(overflow);
-                onesInput.value = formatWithSpaces(overflow);
-              } else {
-                var magBitsPadded = zeroPad(magBits, width - 1);
-                var sm = '1' + magBitsPadded;
-                signMagInput.value = formatWithSpaces(sm);
-                // Ones complement = sign bit '1' + bitwise NOT of magnitude bits
-                var onesStr = '1';
-                for (var i = 0; i < magBitsPadded.length; i++) {
-                  onesStr += magBitsPadded.charAt(i) === '0' ? '1' : '0';
-                }
-                onesInput.value = formatWithSpaces(onesStr);
-              }
-            }
-          }
-
-          // Info panel - always update
-          var unsigned = val & mask;
-          var rangeMin = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
-          var rangeMax = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
-          document.getElementById('infoBw').textContent = width;
-          document.getElementById('infoVal').textContent = val;
-          document.getElementById('infoUnsigned').textContent = unsigned;
-          document.getElementById('infoRange').textContent = '[' + rangeMin + ', ' + rangeMax + ']';
-        } finally {
-          isUpdating = false;
-        }
-      }
-
-      function onInput(key) {
-        if (isUpdating) return;
-        lastEditedField = key;
-
-        var raw;
-        if (key === 'bin') {
-          raw = binInput.value.replace(/[\s\n]/g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          if (!/^-?[01]+$/.test(raw)) {
-            errorMsg.textContent = t('errBin');
-            return;
-          }
-          var neg = raw.charAt(0) === '-';
-          if (neg) raw = raw.substring(1);
-          var v = parseInt(raw, 2);
-          currentValue = neg ? -v : v;
-        } else if (key === 'oct') {
-          raw = octInput.value.replace(/ /g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          if (!/^-?[0-7]+$/.test(raw)) {
-            errorMsg.textContent = t('errOct');
-            return;
-          }
-          var neg = raw.charAt(0) === '-';
-          if (neg) raw = raw.substring(1);
-          var v = parseInt(raw, 8);
-          currentValue = neg ? -v : v;
-        } else if (key === 'dec') {
-          raw = decInput.value.replace(/ /g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          if (!/^-?\d+$/.test(raw)) {
-            errorMsg.textContent = t('errDec');
-            return;
-          }
-          currentValue = parseInt(raw, 10);
-        } else if (key === 'hex') {
-          raw = hexInput.value.replace(/ /g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          // V5.1: Require at least one hex digit (prevents lone '-' from silently clamping to minVal)
-          if (!/^-?[0-9a-fA-F]+$/.test(raw) || raw === '-') {
-            errorMsg.textContent = t('errHex');
-            return;
-          }
-          var neg = raw.charAt(0) === '-';
-          if (neg) raw = raw.substring(1);
-          var v = parseInt(raw, 16);
-          currentValue = neg ? -v : v;
-        } else if (key === 'custom') {
-          raw = customInput.value.replace(/ /g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          var cb = getCustomBase();
-          if (!cb) return;
-          var neg = raw.charAt(0) === '-';
-          if (neg) raw = raw.substring(1);
-          var valid = DIGITS.substring(0, cb);
-          for (var i = 0; i < raw.length; i++) {
-            if (valid.indexOf(raw.charAt(i).toLowerCase()) === -1) {
-              errorMsg.textContent = t('errCust')(cb);
-              return;
-            }
-          }
-          var v = parseInt(raw, cb);
-          currentValue = neg ? -v : v;
-        } else if (key === 'orig') {
-          raw = signMagInput.value.replace(/[\s\n]/g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          var width = getBitWidth();
-          if (!/^[01]+$/.test(raw) || raw.length !== width) {
-            errorMsg.textContent = t('errBits')(width);
-            return;
-          }
-          if (raw.charAt(0) === '0') {
-            currentValue = raw.length > 1 ? parseInt(raw.substring(1), 2) : 0;
-          } else {
-            currentValue = raw.length > 1 ? -parseInt(raw.substring(1), 2) : 0;
-          }
-        } else if (key === 'ones') {
-          raw = onesInput.value.replace(/[\s\n]/g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          var width = getBitWidth();
-          if (!/^[01]+$/.test(raw) || raw.length !== width) {
-            errorMsg.textContent = t('errBits')(width);
-            return;
-          }
-          var v = parseInt(raw, 2);
-          var onesAdjust = width >= 31 ? Math.pow(2, width) : (1 << width);
-          currentValue = raw.charAt(0) === '1' ? v - onesAdjust + 1 : v;
-        } else if (key === 'twos') {
-          raw = twosInput.value.replace(/[\s\n]/g, '').trim();
-          if (!raw) {
-            currentValue = 0;
-            errorMsg.textContent = '';
-            binInput.value = '';
-            octInput.value = '';
-            decInput.value = '';
-            hexInput.value = '';
-            customInput.value = '';
-            signMagInput.value = '';
-            onesInput.value = '';
-            twosInput.value = '';
-            return;
-          }
-          var width = getBitWidth();
-          if (!/^[01]+$/.test(raw) || raw.length !== width) {
-            errorMsg.textContent = t('errBits')(width);
-            return;
-          }
-          var v = parseInt(raw, 2);
-          var twosAdjust = width >= 31 ? Math.pow(2, width) : (1 << width);
-          currentValue = raw.charAt(0) === '1' ? v - twosAdjust : v;
-        } else {
-          return;
-        }
-
-        // Check range overflow - clamp instead of reject
-        var width = getBitWidth();
-        var minVal = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
-        var maxVal = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
-        var clamped = false;
-        if (currentValue < minVal) { currentValue = minVal; clamped = true; }
-        if (currentValue > maxVal) { currentValue = maxVal; clamped = true; }
-        if (clamped) {
-          errorMsg.textContent = t('errClamped')(currentValue, minVal, maxVal);
-          setTimeout(function() { errorMsg.textContent = ''; }, 3000);
-        }
-
-        refreshAllDisplays();
-      }
-
-      function onReset() {
-        currentValue = 0;
-        lastEditedField = null;
-        var fields = ['binInput', 'octInput', 'decInput', 'hexInput', 'customInput',
-          'signMagInput', 'onesInput', 'twosInput'];
-        for (var i = 0; i < fields.length; i++) {
-          document.getElementById(fields[i]).value = '';
-        }
-        // Also reset info panel
-        document.getElementById('infoVal').textContent = '0';
-        document.getElementById('infoUnsigned').textContent = '0';
-      }
-
-      function onCalculate() {
-        // If user hasn't edited any field yet, nothing to calculate
-        if (!lastEditedField) return;
-
-        var elems = {
-          bin: binInput,
-          oct: octInput,
-          dec: decInput,
-          hex: hexInput,
-          custom: customInput,
-          orig: signMagInput,
-          ones: onesInput,
-          twos: twosInput
+      function settings() {
+        return {
+          width:IntegerMath.boundedInteger($('bitWidth').value === 'custom' ? $('customBitWidth').value : $('bitWidth').value,1,128),
+          base:IntegerMath.boundedInteger($('customBase').value,2,36)
         };
-
-        var key = lastEditedField;
-        var raw = elems[key].value.replace(/[\s\n]/g, '').trim();
-        if (!raw) return;
-
-        if (key === 'bin') {
-          if (/^-?[01]+$/.test(raw)) {
-            var neg = raw.charAt(0) === '-';
-            if (neg) raw = raw.substring(1);
-            var v = parseInt(raw, 2);
-            currentValue = neg ? -v : v;
-          }
-        } else if (key === 'oct') {
-          if (/^-?[0-7]+$/.test(raw)) {
-            var neg = raw.charAt(0) === '-';
-            if (neg) raw = raw.substring(1);
-            var v = parseInt(raw, 8);
-            currentValue = neg ? -v : v;
-          }
-        } else if (key === 'dec') {
-          if (/^-?\d+$/.test(raw)) {
-            currentValue = parseInt(raw, 10);
-          }
-        } else if (key === 'hex') {
-          // V5.1: Require at least one hex digit (prevents lone '-' from silently clamping to minVal)
-          if (/^-?[0-9a-fA-F]+$/.test(raw) && raw !== '-') {
-            var neg = raw.charAt(0) === '-';
-            if (neg) raw = raw.substring(1);
-            var v = parseInt(raw, 16);
-            currentValue = neg ? -v : v;
-          }
-        } else if (key === 'custom') {
-          var cb = getCustomBase();
-          if (cb) {
-            var neg = raw.charAt(0) === '-';
-            if (neg) raw = raw.substring(1);
-            var valid = DIGITS.substring(0, cb);
-            var ok = true;
-            for (var i = 0; i < raw.length; i++) {
-              if (valid.indexOf(raw.charAt(i).toLowerCase()) === -1) { ok = false; break; }
-            }
-            if (ok) {
-              var v = parseInt(raw, cb);
-              currentValue = neg ? -v : v;
-            }
-          }
-        } else {
-          var width = getBitWidth();
-          if (/^[01]+$/.test(raw) && raw.length === width) {
-            if (key === 'orig') {
-              if (raw.charAt(0) === '0') {
-                currentValue = raw.length > 1 ? parseInt(raw.substring(1), 2) : 0;
-              } else {
-                currentValue = raw.length > 1 ? -parseInt(raw.substring(1), 2) : 0;
-              }
-            } else if (key === 'ones') {
-              var v = parseInt(raw, 2);
-              // Ones complement: use Math.pow for width >= 31 to avoid JS bitwise overflow
-              var onesAdj = width >= 31 ? Math.pow(2, width) : (1 << width);
-              currentValue = raw.charAt(0) === '1' ? v - onesAdj + 1 : v;
-            } else if (key === 'twos') {
-              var v = parseInt(raw, 2);
-              // Twos complement: use Math.pow for width >= 31 to avoid JS bitwise overflow
-              var twosAdj = width >= 31 ? Math.pow(2, width) : (1 << width);
-              currentValue = raw.charAt(0) === '1' ? v - twosAdj : v;
-            }
-          }
-        }
-
-        // Check range overflow - clamp instead of reject
-        var width = getBitWidth();
-        // Use Math.pow for width >= 32 to avoid JS bitwise overflow (1 << 31 is signed negative)
-        var minVal = width >= 32 ? -Math.pow(2, width - 1) : -(1 << (width - 1));
-        var maxVal = width >= 32 ? Math.pow(2, width - 1) - 1 : (1 << (width - 1)) - 1;
-        var clamped = false;
-        if (currentValue < minVal) { currentValue = minVal; clamped = true; }
-        if (currentValue > maxVal) { currentValue = maxVal; clamped = true; }
-        if (clamped) {
-          // Show warning in config bar's error message area (universal for all fields)
-          var errEl2 = document.getElementById('errorMsg');
-          errEl2.textContent = t('errClamped')(currentValue, minVal, maxVal);
-          setTimeout(function() { var e = document.getElementById('errorMsg'); e.textContent = ''; }, 3000);
-        }
-
-        refreshAllDisplays();
       }
-
-      function onCustomBaseChange() {
-        refreshAllDisplays();
+      function grouped(raw) {
+        const sign = raw.startsWith('-') ? '-' : '';
+        const bits = sign ? raw.slice(1) : raw;
+        return sign + bits.replace(/\B(?=(\d{4})+(?!\d))/g,' ');
       }
-
-      function onBwChange() {
-        if (bitWidthSelect.value === 'custom') {
-          customBitWidthInput.disabled = false;
-        } else {
-          customBitWidthInput.disabled = true;
-        }
-        // V4: Skip refresh if all fields are empty (initial state) to avoid filling zeros
-        if (!areAllFieldsEmpty()) {
-          refreshAllDisplays();
+      function formatted(id, value) {
+        return id === 'binInput' || patterns[id] ? grouped(value) : value;
+      }
+      function sizeFields() {
+        for (const id of fields) {
+          const el = $(id);
+          el.style.height = 'auto';
+          el.style.height = (el.scrollHeight + 2) + 'px';
         }
       }
-
-      function onCustomBwInput() {
-        var v = parseInt(customBitWidthInput.value, 10);
-        if (v > 0 && v <= 128) {
-          errorMsg.textContent = '';
-          // V4: Skip refresh if all fields are empty (initial state)
-          if (!areAllFieldsEmpty()) {
-            refreshAllDisplays();
+      function announce(message) {
+        if ($('announcement').textContent !== message) $('announcement').textContent = message;
+      }
+      function issueText(result, width) {
+        if (result.code === 'digit') return t('digit',result.base);
+        if (result.code === 'bits') return t('bits',width);
+        return t(result.code);
+      }
+      // Only valid integer candidates reach the renderer. Draft input remains editable.
+      function evaluate() {
+        const config = settings();
+        if (config.width === null || config.base === null) return {status:'config',...config};
+        if (!model.source) return {status:'empty',...config};
+        const base = {binInput:2,octInput:8,decInput:10,hexInput:16,customInput:config.base}[model.source];
+        const parsed = patterns[model.source] ?
+          IntegerMath.parsePattern(model.raw,config.width,patterns[model.source]) :
+          IntegerMath.parseRadix(model.raw,base);
+        model.candidate = parsed.status === 'valid' ? parsed.value : null;
+        if (parsed.status !== 'valid') return {...parsed,...config};
+        const range = IntegerMath.limits(config.width);
+        if (parsed.value < range.min || parsed.value > range.max) return {status:'range',...config,range};
+        return {status:'valid',...config,values:IntegerMath.represent(parsed.value,config.width,config.base)};
+      }
+      function render(explicit = false, canonicalize = false) {
+        const result = evaluate();
+        copyValues = result.status === 'valid' ? result.values : {};
+        const configMessage = result.width === null ? t('widthError') : result.base === null ? t('baseError') : '';
+        $('errorMsg').textContent = configMessage; $('errorMsg').hidden = !configMessage;
+        $('customBitWidth').setAttribute('aria-invalid',String(result.width === null));
+        $('customBase').setAttribute('aria-invalid',String(result.base === null));
+        const width = result.width;
+        const range = width === null ? null : IntegerMath.limits(width);
+        $('infoRange').textContent = range ? '[' + range.min + ', ' + range.max + ']' : '—';
+        document.querySelector('.config-bar').dataset.wideRange = String($('infoRange').textContent.length > 36);
+        $('infoVal').textContent = result.status === 'valid' ? result.values.decInput : '—';
+        $('infoUnsigned').textContent = result.status === 'valid' ? result.values.unsigned : '—';
+        document.querySelector('.info-grid').dataset.long = String(Math.max($('infoVal').textContent.length, $('infoUnsigned').textContent.length) > 22);
+        let fieldMessage = '';
+        if (result.status === 'range') fieldMessage = t('outOfRange',range.min.toString(),range.max.toString());
+        else if (result.status === 'invalid' || (explicit && result.status === 'incomplete')) fieldMessage = issueText(result,width);
+        for (const id of fields) {
+          const el = $(id), wrapper = el.closest('.field'), feedback = $(id + 'Feedback');
+          const unavailable = result.status === 'valid' && result.values[id] === null;
+          const sourceError = id === model.source && !!fieldMessage;
+          wrapper.classList.toggle('is-unavailable',unavailable);
+          el.setAttribute('aria-invalid',String(sourceError));
+          el.placeholder = unavailable ? t('unavailable') : originalPlaceholders[id];
+          feedback.textContent = sourceError ? fieldMessage : unavailable ? t('unavailableRange',width,range.max.toString()) : '';
+          feedback.hidden = !feedback.textContent;
+          if (id !== model.source || (canonicalize && result.status === 'valid')) {
+            el.value = result.status === 'valid' && !unavailable ? formatted(id,result.values[id]) : '';
           }
-        } else if (v <= 0) {
-          errorMsg.textContent = t('errBw');
+          const button = document.querySelector('[data-copy="' + id + '"]');
+          button.disabled = typeof copyValues[id] !== 'string';
         }
+        if (canonicalize && result.status === 'valid' && model.source) model.raw = $(model.source).value;
+        announce(configMessage || (fieldMessage ? t(names[model.source]) + ': ' + fieldMessage : ''));
+        sizeFields();
       }
-
-      function onLangChange(lang) {
-        currentLang = lang;
-        applyI18n();
+      function applyAppearance() {
+        const theme = darkMode ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="color-scheme"]').content = theme;
+        const toggle = $('themeToggle');
+        toggle.setAttribute('aria-checked',String(darkMode));
+        toggle.setAttribute('aria-label',t('darkMode'));
+        toggle.title = t(darkMode ? 'switchLight' : 'switchDark');
+        toggle.querySelector('use').setAttribute('href',darkMode ? '#icon-sun' : '#icon-moon');
       }
-
-      // Event listeners
-      binInput.oninput = function() { onInput('bin'); };
-      octInput.oninput = function() { onInput('oct'); };
-      decInput.oninput = function() { onInput('dec'); };
-      hexInput.oninput = function() { onInput('hex'); };
-      customInput.oninput = function() { onInput('custom'); };
-      customBaseEl.oninput = onCustomBaseChange;
-      signMagInput.oninput = function() { onInput('orig'); };
-      onesInput.oninput = function() { onInput('ones'); };
-      twosInput.oninput = function() { onInput('twos'); };
-
-      bitWidthSelect.onchange = onBwChange;
-      customBitWidthInput.oninput = onCustomBwInput;
-      var resetBtn = document.getElementById('resetBtn');
-      calcBtn.onclick = onCalculate;
-      resetBtn.onclick = onReset;
-
-      // Language toggle buttons
-      var langBtns = document.querySelectorAll('.lang-btn');
-      for (var i = 0; i < langBtns.length; i++) {
-        langBtns[i].onclick = function() { onLangChange(this.getAttribute('data-lang')); };
+      function applyLanguage() {
+        document.documentElement.lang = language;
+        document.title = t('title');
+        document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+        document.querySelectorAll('[data-label]').forEach(el => { el.setAttribute('aria-label',t(el.dataset.label)); });
+        document.querySelectorAll('[data-title]').forEach(el => { el.title = t(el.dataset.title); });
+        document.querySelectorAll('[data-lang]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.lang === language)));
+        document.querySelectorAll('[data-copy]').forEach(el => { const label = t('copy',t(names[el.dataset.copy])); el.setAttribute('aria-label',label); el.title = label; });
+        document.querySelectorAll('[data-about]').forEach(el => { const label = t('about',t(names[el.dataset.about])); el.setAttribute('aria-label',label); el.title = label; });
+        applyAppearance();
+        render();
       }
-
-      // Initialize
-      applyI18n();
-      refreshAllDisplays();
-      isInitializing = false;
+      function configurationChanged() {
+        // Configuration changes re-encode the mathematical value, rather than reinterpreting old bits.
+        if (model.candidate !== null) {
+          model = {source:'decInput',raw:model.candidate.toString(),candidate:model.candidate};
+          $('decInput').value = model.raw;
+        }
+        const custom = $('bitWidth').value === 'custom';
+        $('customWidthGroup').hidden = !custom; $('customBitWidth').disabled = !custom;
+        render();
+      }
+      for (const id of fields) {
+        $(id).addEventListener('input',event => {
+          if (event.isComposing) return;
+          model = {source:id,raw:$(id).value,candidate:null};
+          render();
+        });
+        $(id).addEventListener('compositionend',() => {
+          model = {source:id,raw:$(id).value,candidate:null}; render();
+        });
+        $(id).addEventListener('blur',() => { if (model.source === id) render(true,true); });
+        $(id).addEventListener('keydown',event => {
+          if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); render(true,true); }
+        });
+      }
+      $('bitWidth').addEventListener('change',configurationChanged);
+      $('themeToggle').addEventListener('click',() => { darkMode = !darkMode; applyAppearance(); });
+      $('customBitWidth').addEventListener('input',configurationChanged);
+      $('customBase').addEventListener('input',configurationChanged);
+      $('calcBtn').addEventListener('click',() => render(true,true));
+      $('resetBtn').addEventListener('click',() => {
+        if (settings().width === null) { $('bitWidth').value = '8'; $('customBitWidth').value = '8'; }
+        if (settings().base === null) $('customBase').value = '10';
+        model = {source:null,raw:'',candidate:null};
+        document.querySelectorAll('.explanation[open]').forEach(el => { el.open = false; });
+        configurationChanged();
+      });
+      document.querySelectorAll('[data-lang]').forEach(el => el.addEventListener('click',() => { language = el.dataset.lang; applyLanguage(); }));
+      document.addEventListener('click',event => {
+        document.querySelectorAll('.explanation[open]').forEach(el => { if (!el.contains(event.target)) el.open = false; });
+      });
+      document.addEventListener('keydown',event => {
+        if (event.key === 'Escape') document.querySelectorAll('.explanation[open]').forEach(el => { el.open = false; el.querySelector('summary').focus(); });
+      });
+      function legacyCopy(value) {
+        const active = document.activeElement;
+        const selection = active && 'selectionStart' in active ? {start:active.selectionStart,end:active.selectionEnd} : null;
+        const position = {x:scrollX,y:scrollY};
+        const area = document.createElement('textarea'); area.value = value;
+        area.setAttribute('readonly',''); area.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+        document.body.append(area); area.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); }
+        finally {
+          area.remove();
+          if (active && active.isConnected) {
+            active.focus({preventScroll:true});
+            if (selection && selection.start !== null) active.setSelectionRange(selection.start,selection.end);
+          }
+          window.scrollTo(position.x,position.y);
+        }
+        return copied;
+      }
+      document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click',async () => {
+        const id = button.dataset.copy, value = copyValues[id];
+        if (typeof value !== 'string') return;
+        let success = false;
+        try { if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(value); success = true; } } catch (_) {}
+        if (!success) { try { success = legacyCopy(value); } catch (_) {} }
+        if (!success) { announce(t('copyFailed')); return; }
+        announce(t('copied',t(names[id])));
+        button.classList.add('is-copied'); button.querySelector('use').setAttribute('href','#icon-check');
+        clearTimeout(copyTimers.get(id));
+        copyTimers.set(id,setTimeout(() => { button.classList.remove('is-copied'); button.querySelector('use').setAttribute('href','#icon-copy'); },1600));
+      }));
+      let resizeFrame;
+      window.addEventListener('resize',() => { cancelAnimationFrame(resizeFrame); resizeFrame = requestAnimationFrame(sizeFields); });
+      if (document.fonts) document.fonts.ready.then(sizeFields);
+      applyLanguage();
     })();
   </script>
 </body>
